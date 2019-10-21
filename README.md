@@ -9,3 +9,6 @@ Embedded code for a self-checkout kiosk halloween costume
 * `sudo apt install omxplayer`.
 * For pygame to work: `sudo apt-get install libsdl1.2debian libsdl-image1.2 libsdl-mixer1.2 libsdl-mixer1.2-dev libsdl-net1.2 libsdl-net1.2-dev timidity.`.
 
+* `pip3 install pipenv`
+* For USB printer to work, follow udev seup procedure [here](https://python-escpos.readthedocs.io/en/latest/user/installation.html)
+	* NOTE: trigger new permissions with `sudo udevadm trigger`
