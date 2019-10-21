@@ -7,18 +7,30 @@ class Item:
 
 class Receipt:
 	def __init__(self, printer, tax_rate=0.07):
+		"""
+		Constructor
+		"""
 		self.printer = printer
 		self.tax_rate = tax_rate
 
 		self.item_list = []
 
 	def clear(self):
+		"""
+		Empties the item list.
+		"""
 		self.item_list = []
 
 	def add_item(self, item):
+		"""
+		Adds an item to the item list.
+		"""
 		self.item_list.append(item)
 
 	def calc_totals(self):
+		"""
+		Calculates and returns subtotal, tax, and total for items in list.
+		"""
 		subtotal = 0
 		for item in self.item_list:
 			subtotal += item.price
@@ -63,5 +75,3 @@ class Receipt:
 		self.printer.qr("http://rickrollomatic.com", size=10)
 
 		self.printer.cut()
-
-
