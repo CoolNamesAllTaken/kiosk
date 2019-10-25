@@ -3,15 +3,24 @@ from enum import Enum
 from light_service import LightService
 from printer_service import Receipt, Item
 from scanner_service import BarcodeScanner
+from sound_service import SoundPlayer
 
 from escpos.printer import Usb
 
 def main():
-	scanner = BarcodeScanner()
-	while True:
-		code = scanner.run()
-		if code is not "":
-			print(code.strip())
+	player = SoundPlayer()
+	# for i in range(100, 1000):
+	# 	player.say_number(i)
+
+	for i in range(43):
+		player.play_track("track" + str(i))
+
+	# scanner = BarcodeScanner()
+	# while True:
+	# 	code = scanner.run()
+	# 	if code is not "":
+	# 		print(code.strip())
+
 	# printer = Usb(0x04b8, 0x0202)
 
 	# receipt = Receipt(printer)

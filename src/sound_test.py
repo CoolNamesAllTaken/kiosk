@@ -14,12 +14,12 @@ from pygame import mixer
 print("press a button!")
 
 mixer.init()
-sound = mixer.Sound("../audio/tracks/track41.wav")
+sound = mixer.Sound("../audio/beep.wav")
  
 while True:
 
     sound.play()
- 
+    time.sleep(5)
     # omxplayer -o local <file>
     # omxplayer -o hdmi <file>
     # omxplayer -o both <file>
