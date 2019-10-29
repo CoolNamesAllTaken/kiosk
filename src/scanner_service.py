@@ -1,3 +1,4 @@
+import threading
 import usb.core
 
 VENDOR_ID = 0x1234
@@ -119,22 +120,30 @@ class BarcodeScanner:
 			scanner_interface,
 			custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN)
 
+		self.scanner_lock = threading.Lock()
+
 	def run(self):
-		code = ""
-		done_reading = False
-		while not done_reading:
-			# lsusb -v : find wMaxPacketSize (8 in my case)
-			try:
-				data = self.scanner_endpoint.read(BUFFER_SIZE, timeout=20)
-				if data is 0:
+		"""
+		Update function that reads in characters from the scanner.
+		Return:
+			string of ASCII characters read from the scanner, if it returned anything.
+		"""
+		with self.scanner_lock:
+			code = ""
+			done_reading = False
+			while not done_reading:
+				# lsusb -v : find wMaxPacketSize (8 in my case)
+				try:
+					data = self.scanner_endpoint.read(BUFFER_SIZE, timeout=20)
+					if data is 0:
+						done_reading = True
+					else:
+						code += hid2ascii(data)
+				# try:
+				# 	# lsusb -v : find wMaxPacketSize (8 in my case)
+				# 	a = scanner_endpoint.read(64, timeout=2000)
+				except usb.core.USBError:
 					done_reading = True
-				else:
-					code += hid2ascii(data)
-			# try:
-			# 	# lsusb -v : find wMaxPacketSize (8 in my case)
-			# 	a = scanner_endpoint.read(64, timeout=2000)
-			except usb.core.USBError:
-				done_reading = True
 
 		return code
 
