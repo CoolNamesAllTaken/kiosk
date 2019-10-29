@@ -83,9 +83,10 @@ TEXT_BAR_BACKGROUND_COLOR = (0, 0, 0)
 
 
 class Display:
-	def __init__(self, sound_player):
-		pygame.init()
+	def __init__(self, event_listener, sound_player):
+		# pygame already initialized by event_listener
 
+		self.event_listener = event_listener
 		self.sound_player = sound_player
 		self.screen = pygame.display.set_mode(SCREEN_SIZE)
 
@@ -127,7 +128,7 @@ class Display:
 			entered_val_text = self.key_font.render(entered_val, True, TEXT_BAR_COLOR)
 			pygame.draw.rect(self.screen, TEXT_BAR_BACKGROUND_COLOR, self.text_bar_rect)
 			self.screen.blit(entered_val_text, self.text_bar_rect)
-			for event in pygame.event.get():
+			for event in self.event_listener.get_mouse_events():
 				# if event.type == pygame.QUIT: sys.exit()
 				if event.type == pygame.MOUSEBUTTONDOWN:
 					for i, key_rect in enumerate(self.key_rect_list):
@@ -141,6 +142,7 @@ class Display:
 							elif key_val is "ENTR":
 								return entered_val
 							else:
+								self.sound_player.say_number(int(KEY_VALUE_LIST[i]))
 								entered_val += KEY_VALUE_LIST[i]
 
 	def display_receipt(self, receipt):

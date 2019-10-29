@@ -99,11 +99,11 @@ def hid2ascii(lst):
 	return conv_table[ch][shift]
 
 class BarcodeScanner:
-	def __init__(self):
+	def __init__(self, vendor_id=VENDOR_ID, product_id=PRODUCT_ID):
 		"""
 		Constructor: finds USB barcode scanner, detaches it from the kernel
 		"""
-		self.scanner_device = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+		self.scanner_device = usb.core.find(idVendor=vendor_id, idProduct=product_id)
 		if self.scanner_device is None:
 			raise ValueError("Cannot find scanner_device!")
 

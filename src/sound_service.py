@@ -7,6 +7,10 @@ class SoundPlayer:
 	def __init__(self, audio_path = os.path.join("..", "audio")):
 		mixer.init()
 
+		mixer.music.load(os.path.join(audio_path, "static.wav"))
+		mixer.music.set_volume(0.008)
+		mixer.music.play(-1)
+
 		# load number audio files
 		self.number_dict = {}
 		# for loop adding pygame mixer things
@@ -50,7 +54,7 @@ class SoundPlayer:
 		self.play_sound_and_sleep(self.number_dict[str(number)[0] + "0"])
 
 	def say_number(self, number):
-		if number <= 20 and number > 0:
+		if number <= 20 and number >= 0:
 			self.play_sound_and_sleep(self.number_dict[str(number)])
 		elif number > 20 and number < 100:
 			self._say_tens(number)
@@ -67,7 +71,7 @@ class SoundPlayer:
 			self.say_number(number % 1000) # say 100's and below
 		else:
 			# unsupported number
-			self.say_track("beep")
+			self.play_track("beep")
 
 	def play_track(self, track):
 		if track in self.track_dict:
