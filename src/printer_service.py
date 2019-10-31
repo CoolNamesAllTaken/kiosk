@@ -50,6 +50,12 @@ class Receipt:
 
 		return subtotal, tax, tax + subtotal
 
+	def get_item_list(self):
+		"""
+		Thread-safe getter function for item list.
+		"""
+		with self.item_list_lock:
+			return self.item_list.copy()
 
 	def print(self):
 		"""
