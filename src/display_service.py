@@ -91,6 +91,10 @@ RECEIPT_COLOR_TEXT = (0, 0, 0)
 RECEIPT_COLOR_BACKGROUND = (100, 100, 100)
 RECEIPT_MAX_NUM_ITEMS = 8 # maximum number of items to render before scrolling
 
+RECEIPT_CHECKOUT_BUTTON_POSITION = (0, 0)
+
+MESSAGE_FONT_SIZE = 100
+MESSAGE_FONT_POSITION = (200, 200)
 
 class Display:
 	def __init__(self, event_listener, sound_player):
@@ -100,6 +104,7 @@ class Display:
 		self.sound_player = sound_player
 		self.screen = pygame.display.set_mode(SCREEN_SIZE)
 
+		# Keypad Stuff
 		self.key_font = pygame.font.SysFont("Arial", round(KEY_SIZE[1] / 2), bold=True, italic=False)
 		self.key_rect_list = []
 		self.key_text_list = []
@@ -109,11 +114,17 @@ class Display:
 
 		self.text_bar_rect = pygame.Rect(KEYPAD_TEXT_BAR_POSITION, KEYPAD_TEXT_BAR_SIZE)
 
+		# Receipt Stuff
 		self.receipt_font = pygame.font.SysFont("Arial", round(RECEIPT_ITEM_SIZE[1]), bold=False, italic=False)
 		self.receipt_rect_list = []
 		for i in range(RECEIPT_MAX_NUM_ITEMS):
 			item_position = (RECEIPT_ITEM_ORIGIN[0], RECEIPT_ITEM_ORIGIN[1] + RECEIPT_ITEM_SPACING * i)
 			self.receipt_rect_list.append(pygame.Rect(item_position, RECEIPT_ITEM_SIZE))
+
+		self.receipt_checkout_button_rect = pygame.Rect(RECEIPT_CHECKOUT_BUTTON_POSITION, KEY_SIZE)
+
+		# Message Stuff
+		self.message_font = pygame.font.SysFont("Arial", MESSAGE_FONT_SIZE, bold=True, italic=False)
 
 
 	def _draw_keypad(self, key_status_list):
@@ -131,7 +142,7 @@ class Display:
 
 		pygame.display.update()
 
-	def _draw_receipt(self, receipt):
+	def _draw_receipt(self, receipt, update=True):
 		self.screen.fill(RECEIPT_COLOR_BACKGROUND)
 		item_list = receipt.get_item_list() # get copy of item list for thread safety
 		if len(item_list) > RECEIPT_MAX_NUM_ITEMS:
@@ -151,8 +162,14 @@ class Display:
 				price_text = str(item_list[i].name)
 				price_font = self.receipt_font.render(price_text, True, RECEIPT_COLOR_TEXT)
 				self.screen.blit(price_font, self.receipt_rect_list[i])
-				
-		pygame.display.update()
+		
+		if update:		
+			pygame.display.update()
+
+	def _draw_message(self, message_text, message_color=(255, 255, 255)):
+		self.screen.fill(RECEIPT_COLOR_BACKGROUND)
+		font = self.message_font.render(message_text, True, message_color)
+		self.screen.blit(font, MESSAGE_FONT_POSITION)
 
 	def keypad(self):
 		"""
@@ -189,6 +206,31 @@ class Display:
 		"""
 		Accepts an instance of a receipt class, and displays its contents, with one item per line.
 		Makes use of the calc_totals() function to display subtotal on bottom right of screen.
+		Returns:
+			1 if checkout button pressed
+			0 if no button pressed
 		"""
-		self._draw_receipt(receipt)
+		self._draw_receipt(receipt, update=False)
+		pygame.draw.rect(self.screen, KEY_COLOR_NUMBER_UP, self.receipt_checkout_button_rect)
+		checkout_button_text = self.key_font.render("Checkout", True, KEY_COLOR_TEXT)
+		self.screen.blit(checkout_button_text, self.receipt_checkout_button_rect)
+		pygame.display.update()
+		for event in self.event_listener.get_mouse_events():
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				if (self.receipt_checkout_button_rect.collidepoint(event.pos)):
+					return 1
+
+		return 0
+
+
+	def message(self, message, error=False):
+		"""
+		Draws an error message on the screen.
+		"""
+		if error:
+			self._draw_message(message, (255, 0, 0))
+		else:
+			self._draw_message(message)
+
+		pygame.display.update()
 

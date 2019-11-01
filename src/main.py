@@ -1,16 +1,24 @@
 import threading
 import time
 from enum import Enum
-from random import randint
+import random
 
 from event_service import EventListener
 from light_service import LightService
 from printer_service import Receipt, Item
-from scanner_service import BarcodeScanner
+from scanner_service import UsbScanner
 from sound_service import SoundPlayer
 from display_service import Display
 
 from escpos.printer import Usb
+
+UNLOCK_STRING = "1234"
+RAND_ITEMS_LIST = ["none pizza with left beef", "streamed broccoli", "cows and cows and cows", "smoked meats",
+ "pen-pinapple-apple pen", "spiced autumn pumpkin whipped iced cioccolocino", "semechki, blyat", "receipt paper",
+ "haggis", "durian", "dragonfruit", "lutefisk", "unicornfruit", "fermented shark", "mot schutzen", "stolly", "chu-mat",
+ "Karoun yogurt milk drink", "grocery", "perfectly generic object", "unidentified item", "ice cold determination", 
+ "marshmallows", "horse fibers", "P. Sherman 42 Wallaby Way, Sydney", "help", "́ű̡̝̹̝̮͉ͨͥ̎̒̇ͤn̞̺ͤ̇ ͙ͮi̜̜̿̉͛ͧ̾ ̗͚̦̖͖ͩ̏ͣͥͅd͎̩̙͚͕͊ͨ͒̊͌ͬͮ̕ͅ ̡͈͚͉͐͐̑̂͌̊̚e̠͖̝ͭͤ͆ͪ̓ ͍̬̠̗ͭ́̽ͫ͟ñ̞͚̭͕̙ ̛̮̯̟̞̥̪͗͗ͤ̚ͅt̝̠̳͊̇͂̌͊̄ͮ̀ ͓͇̪̮̗ͬ̒̓͟ȉͩ͂ͪͤ̀͏͖̘̩̥͙̬ͅ ̬̖̰f͗ͫ͜ ̞͎͙̗̳̖̙ ̦̘́i̥̗̞̭ͫͦͮ͛ͭe̲͉̰̫̬̽ͤ̿̓ͤ͒̋͠ ͉̣̯̩̻̟̾̒͊͘ͅd̛́ͩ͑̾", 
+ "carrot", "one (1) milk"]
 
 unicode_to_track_map = {
 	" ": "beep",
@@ -30,12 +38,14 @@ unicode_to_track_map = {
 	"v": "track34",
 	"1": "track41",
 	"2": "track42",
-	"3": "track43"
+	"3": "track43",
+	"0": "cena"
 }
 
 event_listener = EventListener()
 lights = LightService()
-scanner = BarcodeScanner(vendor_id = 0x1234, product_id = 0x5678)
+barcode_scanner = UsbScanner(vendor_id = 0x1234, product_id = 0x5678)
+# magstripe_scanner = UsbScanner(vendor_id = 0x0801, product_id = 0x0001)
 printer = Usb(0x04b8, 0x0202)
 receipt = Receipt(printer)
 sound_player = SoundPlayer()
@@ -52,11 +62,13 @@ state = PosState.GREETING
 
 def add_random_item(item_name):
 	sound_player.play_track("beep") # beep when item is scanned
-	price_dollars = randint(0, 10)
-	price_cents = randint(10, 99)
+	price_dollars = random.randint(0, 10)
+	price_cents = random.randint(10, 99)
 	receipt.add_item(Item(item_name, price_dollars + price_cents / 100))
 	sound_player.say_number(price_dollars)
 	sound_player.say_number(price_cents)
+	if random.randint(0, 2) == 1:
+		sound_player.play_track(random.choice(["track11", "track14"])) # move item to bag
 
 def run_light_service():
 	while True:
@@ -66,17 +78,18 @@ def run_light_service():
 
 def run_scanner_service():
 	while True:
-		code = scanner.run()
-		if code != "":
-			stripped_code = code.strip()
-			print(stripped_code)
-			add_random_item(stripped_code)
-			
-			if "093573356025" in stripped_code:
-				receipt.print()
-				receipt.clear()
+		barcode = barcode_scanner.run()
+		if barcode != "":
+			stripped_barcode = barcode.strip()
+			print(stripped_barcode)
+			add_random_item(stripped_barcode)
+
+		# magcode = magstripe_scanner.run()
+		# if magcode != "":
+		# 	display.keypad()
 
 def run_control_service():
+	global state
 	while True:
 		key_events = event_listener.get_key_events()
 		for key in key_events:
@@ -86,8 +99,11 @@ def run_control_service():
 				sound_player.play_track(unicode_to_track_map[key_code])
 			elif key_code == "`":
 				# add item key was pressed
-				add_random_item("carndeh")
-
+				add_random_item(random.choice(RAND_ITEMS_LIST))
+			elif key_code == "j":
+				# throw an error
+				sound_player.play_track(random.choice(["track41", "track42", "track43"]))
+				state = PosState.ERROR
 
 def run_event_service():
 	while True:
@@ -100,8 +116,8 @@ def main():
 	light_service_thread.start()
 
 	# COMMENT OUT THESE TWO LINES TO AVOID TEXT BARF ON ERR
-	# scanner_service_thread = threading.Thread(target=run_scanner_service, daemon=True)
-	# scanner_service_thread.start()
+	scanner_service_thread = threading.Thread(target=run_scanner_service, daemon=True)
+	scanner_service_thread.start()
 
 	event_listener_thread = threading.Thread(target=run_event_service, daemon=True)
 	event_listener_thread.start()
@@ -109,26 +125,47 @@ def main():
 	event_control_thread = threading.Thread(target=run_control_service, daemon=True)
 	event_control_thread.start()
 
-	print(display.keypad())
 
 
 	while(True):
 		# set the lights
 		if state == PosState.GREETING:
+			display.message("Welcome")
 			lights.light_tower_state_list = [LightService.State.OFF, LightService.State.OFF, LightService.State.ON]
 			sound_player.play_track("track01"); # "Welcome, please scan your first item"
 			while len(receipt.item_list) is 0:
 				time.sleep(0.1)
 			state = PosState.ITEM_SCANNING
 		elif state == PosState.ITEM_SCANNING:
-			display.receipt(receipt)
 			lights.light_tower_state_list = [LightService.State.OFF, LightService.State.ON, LightService.State.OFF]
+			button_val = display.receipt(receipt)
+			if button_val == 1:
+				state = PosState.PAYMENT
+			
 		elif state == PosState.PAYMENT:
 			lights.light_tower_state_list = [LightService.State.OFF, LightService.State.ON, LightService.State.OFF]
+			sound_player.play_track("track25") # how many bags
+			num_bags = display.keypad()
+			if num_bags == "":
+				num_bags = "0"
+			bags_item = Item("Bags", 0.25 * float(num_bags))
+			sound_player.play_track("track32") # thanks for shopping
+			receipt.add_item(bags_item)
+			receipt.print()
+			receipt.clear()
+			sound_player.play_track("track34") # remove all bagged items
+			state = PosState.FAREWELL
 		elif state == PosState.FAREWELL:
+			display.message("Goodbye!")
 			lights.light_tower_state_list = [LightService.State.OFF, LightService.State.OFF, LightService.State.ON]
+			sound_player.play_track("track33") # fast fun convenient
+			event_listener.get_mouse_events() # flush clicks
+			state = PosState.GREETING
 		else: # error state
 			lights.light_tower_state_list = [LightService.State.FLASHING, LightService.State.OFF, LightService.State.OFF]
+			keycode = display.keypad()
+			if keycode == UNLOCK_STRING:
+				state = PosState.ITEM_SCANNING
 			pass
 
 		# lights.set_light_tower_state(LightService.Color.RED, LightService.State.FLASHING)
@@ -143,9 +180,9 @@ def main():
 	# for i in range(43):
 	# 	sound_player.play_track("track" + str(i))
 
-	# scanner = BarcodeScanner()
+	# barcode_scanner = UsbScanner()
 	# while True:
-	# 	code = scanner.run()
+	# 	code = barcode_scanner.run()
 	# 	if code is not "":
 	# 		print(code.strip())
 
@@ -161,9 +198,6 @@ def main():
 	# receipt.add_item(Item("bear", 5))
 	# receipt.add_item(Item("poo", 4.50))
 	# receipt.print()
-
-	while True:
-		lights.run()
 
 if __name__ == '__main__':
 	main()

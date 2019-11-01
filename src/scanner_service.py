@@ -98,7 +98,7 @@ def hid2ascii(lst):
 		return ''
 	return conv_table[ch][shift]
 
-class BarcodeScanner:
+class UsbScanner:
 	def __init__(self, vendor_id=VENDOR_ID, product_id=PRODUCT_ID):
 		"""
 		Constructor: finds USB barcode scanner, detaches it from the kernel
