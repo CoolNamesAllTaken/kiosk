@@ -15,9 +15,10 @@ Embedded code for a self-checkout kiosk halloween costume
 
 * If installing pre-release escpos with `pipenv install python-escpos --pre`, need to install development 
 
-Getting the barcode scanner to work
+Getting the barcode scanner and magstripe to work
 * `sudo vi /etc/udev/rules.d/99-pyusb.rules`
 	* `SUBSYSTEM=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="e5e3", MODE="0664", GROUP="dialout"`
+	* `SUBSYSTEM=="usb", ATTRS{idVendor}=="0801", ATTRS{idProduct}=="0001", MODE="0664", GROUP="dialout"`
 	* Matches the Vendor ID and Device ID for the barcode scanner, with MODE such that owner and group can rw, everyone else can read.
 	* Puts device in dialout group, can check that pi is in that group (from receipt printer setup) with `groups` bash command.
 * `sudo udevadm trigger`
